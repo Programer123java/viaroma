@@ -2,7 +2,7 @@
    VIA ROMA — script.js  (v5 — Supabase)
    UI logic only. All DB calls go through supabase.js.
    ═══════════════════════════════════════════════════════════ */
-'use strict';
+import { getMenuItems, getContactInfo, getNews, incrementViewCount, getAdminPassword, _db } from './supabase.js';
 
 /* ── TRANSLATIONS ─────────────────────────────────────────── */
 const T = {

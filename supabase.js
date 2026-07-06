@@ -2,61 +2,13 @@
    VIA ROMA — supabase.js  (WEBSITE)
    All Supabase database logic lives here. No UI code.
    UI logic stays in script.js.
-
-   ── SETUP: Run this SQL once in your Supabase SQL editor ──
-
-   create table menu_items (
-     id bigint generated always as identity primary key,
-     name text, name_bg text,
-     description text, desc_bg text,
-     price numeric, category text, image text,
-     featured boolean default false,
-     created_at timestamptz default now()
-   );
-   create table site_content (
-     id int primary key,
-     data jsonb not null
-   );
-   create table news (
-     id bigint generated always as identity primary key,
-     text text not null,
-     lang text not null,
-     created_at timestamptz default now()
-   );
-   create table website_stats (
-     id int primary key,
-     total_views bigint default 0 not null,
-     day_views   bigint default 0 not null,
-     month_views bigint default 0 not null,
-     year_views  bigint default 0 not null,
-     last_day    text   default '' not null,
-     last_month  text   default '' not null,
-     last_year   text   default '' not null
-   );
-   insert into website_stats (id, total_views, day_views, month_views, year_views, last_day, last_month, last_year)
-     values (1, 0, 0, 0, 0, '', '', '');
-
-   -- If table already exists, add the new columns:
-   alter table website_stats
-     add column if not exists day_views   bigint default 0 not null,
-     add column if not exists month_views bigint default 0 not null,
-     add column if not exists year_views  bigint default 0 not null,
-     add column if not exists last_day    text   default '' not null,
-     add column if not exists last_month  text   default '' not null,
-     add column if not exists last_year   text   default '' not null;
-
-   alter table menu_items   disable row level security;
-   alter table site_content disable row level security;
-   alter table news         disable row level security;
-   alter table website_stats disable row level security;
-
    ═══════════════════════════════════════════════════════════ */
-'use strict';
+import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://dimfauesrcwzaxfajnev.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_mx57x7dLubFt1Ci7p0kL1A_0Y1xcz4o';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJib2x0IiwicmVmIjoiMGVjOTBiNTdkNmU5NWZjYmRhMTk4MzJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODE1NzQsImV4cCI6MTc1ODg4MTU3NH0.9I8-U0x86Ak8t2DGaIk0HfvTSLsAyzdnz-Nw00mMkKw';
 
-const _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const _db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ── INTERNAL: map DB row → JS object ─────────────────────── */
 function _rowToItem(row) {
@@ -75,7 +27,7 @@ function _rowToItem(row) {
 
 /* ══ MENU ITEMS ═══════════════════════════════════════════════ */
 
-async function getMenuItems() {
+export async function getMenuItems() {
   const { data, error } = await _db
     .from('menu_items')
     .select('*')
@@ -84,7 +36,7 @@ async function getMenuItems() {
   return (data || []).map(_rowToItem);
 }
 
-async function addMenuItem(item) {
+export async function addMenuItem(item) {
   const { data, error } = await _db
     .from('menu_items')
     .insert([{
@@ -103,7 +55,7 @@ async function addMenuItem(item) {
   return _rowToItem(data);
 }
 
-async function updateMenuItem(id, item) {
+export async function updateMenuItem(id, item) {
   const { data, error } = await _db
     .from('menu_items')
     .update({
@@ -123,14 +75,14 @@ async function updateMenuItem(id, item) {
   return _rowToItem(data);
 }
 
-async function deleteMenuItem(id) {
+export async function deleteMenuItem(id) {
   const { error } = await _db.from('menu_items').delete().eq('id', id);
   if (error) throw error;
 }
 
 /* ══ SITE CONTENT (contact, about, social, settings) ════════ */
 
-async function getContactInfo() {
+export async function getContactInfo() {
   const { data, error } = await _db
     .from('site_content')
     .select('data')
@@ -140,7 +92,7 @@ async function getContactInfo() {
   return data ? data.data : null;
 }
 
-async function updateContactInfo(content) {
+export async function updateContactInfo(content) {
   const toSave = { ...content };
   delete toSave.news;
   delete toSave.newsEn;
@@ -152,7 +104,7 @@ async function updateContactInfo(content) {
 
 /* ══ NEWS ═════════════════════════════════════════════════════ */
 
-async function getNews() {
+export async function getNews() {
   const { data, error } = await _db
     .from('news')
     .select('*')
@@ -165,7 +117,7 @@ async function getNews() {
   };
 }
 
-async function addNews(text, lang) {
+export async function addNews(text, lang) {
   const { data, error } = await _db
     .from('news')
     .insert([{ text, lang }])
@@ -175,19 +127,14 @@ async function addNews(text, lang) {
   return data;
 }
 
-async function deleteNews(id) {
+export async function deleteNews(id) {
   const { error } = await _db.from('news').delete().eq('id', id);
   if (error) throw error;
 }
 
 /* ══ WEBSITE STATS (visitor counter) ════════════════════════ */
 
-/* IMPORTANT: getViewCount and incrementViewCount NEVER throw.
-   If the website_stats table doesn't exist yet, they silently return 0
-   so that admin loadData() (which calls getViewCount in Promise.all)
-   never crashes and always loads the menu correctly. */
-
-async function getViewCount() {
+export async function getViewCount() {
   try {
     const { data, error } = await _db
       .from('website_stats')
@@ -199,21 +146,14 @@ async function getViewCount() {
   } catch { return 0; }
 }
 
-/* incrementViewCount — increments total, day, month, and year counters.
-   Day/month/year counters auto-reset when the date period changes.
-   RESILIENT: if the table only has the old schema (total_views only),
-   the full upsert fails and we fall back to incrementing just total_views
-   so the visitor count ALWAYS works regardless of migration state. */
-async function incrementViewCount() {
+export async function incrementViewCount() {
   try {
-    /* ── Step 1: Read current row ─────────────────────────── */
     const { data: row, error: readErr } = await _db
       .from('website_stats')
       .select('*')
       .eq('id', 1)
       .maybeSingle();
 
-    /* If the table doesn't exist at all, try a minimal bootstrap insert */
     if (readErr) {
       try {
         const { data: d } = await _db
@@ -225,9 +165,9 @@ async function incrementViewCount() {
     }
 
     const now        = new Date();
-    const todayStr   = now.toISOString().slice(0, 10);   /* YYYY-MM-DD */
-    const monthStr   = now.toISOString().slice(0, 7);    /* YYYY-MM    */
-    const yearStr    = String(now.getFullYear());         /* YYYY       */
+    const todayStr   = now.toISOString().slice(0, 10);
+    const monthStr   = now.toISOString().slice(0, 7);
+    const yearStr    = String(now.getFullYear());
 
     const cur        = row || {};
     const totalViews = (Number(cur.total_views) || 0) + 1;
@@ -235,7 +175,6 @@ async function incrementViewCount() {
     const monthViews = ((cur.last_month === monthStr)  ? Number(cur.month_views) || 0 : 0) + 1;
     const yearViews  = ((cur.last_year  === yearStr)   ? Number(cur.year_views)  || 0 : 0) + 1;
 
-    /* ── Step 2: Try full upsert (new schema with all 7 columns) ── */
     const { data, error: writeErr } = await _db
       .from('website_stats')
       .upsert({
@@ -253,10 +192,6 @@ async function incrementViewCount() {
 
     if (!writeErr) return Number(data.total_views);
 
-    /* ── Step 3: Fallback — table has old schema (only total_views) ─
-       The full upsert failed because day_views / month_views / year_views
-       columns don't exist yet. Increment just total_views so the counter
-       still works before the user runs the ALTER TABLE migration. */
     console.warn('[Via Roma] Full upsert failed (old schema?), using fallback:', writeErr.message);
     const { data: d2, error: e2 } = await _db
       .from('website_stats')
@@ -266,7 +201,6 @@ async function incrementViewCount() {
 
     if (!e2) return Number(d2.total_views);
 
-    /* Absolute last resort: RPC-free increment via update */
     const { data: d3 } = await _db
       .from('website_stats')
       .update({ total_views: totalViews })
@@ -283,19 +217,19 @@ async function incrementViewCount() {
 
 /* ══ BULK HELPERS (data reset only) ═════════════════════════ */
 
-async function _clearAllMenuItems() {
+export async function _clearAllMenuItems() {
   const { error } = await _db.from('menu_items').delete().gte('id', 0);
   if (error) throw error;
 }
 
-async function _clearAllNews() {
+export async function _clearAllNews() {
   const { error } = await _db.from('news').delete().gte('id', 0);
   if (error) throw error;
 }
 
 /* ══ ADMIN PASSWORD ═══════════════════════════════════════════ */
 
-async function getAdminPassword() {
+export async function getAdminPassword() {
   try {
     const { data, error } = await _db
       .from('admin_settings')
@@ -306,3 +240,6 @@ async function getAdminPassword() {
     return data.password || 'admin123';
   } catch { return 'admin123'; }
 }
+
+/* ══ REALTIME CHANNEL ═════════════════════════════════════════ */
+export { _db };
