@@ -745,7 +745,7 @@ async function submitAdminPw() {
     const stored = await getAdminPassword();
     if (val === stored) {
       sessionStorage.setItem('vr_admin_ok','1');
-      window.location.href = 'admin.html';
+      window.location.href = '/admin.html';
     } else {
       if (err) err.style.display = 'block';
       document.getElementById('adminPwInput').select();
@@ -755,7 +755,7 @@ async function submitAdminPw() {
     const stored = localStorage.getItem('vr_admin_pw') || 'admin123';
     if (val === stored) {
       sessionStorage.setItem('vr_admin_ok','1');
-      window.location.href = 'admin.html';
+      window.location.href = '/admin.html';
     } else {
       if (err) err.style.display = 'block';
       document.getElementById('adminPwInput').select();
