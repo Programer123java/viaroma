@@ -241,5 +241,12 @@ export async function getAdminPassword() {
   } catch { return 'admin123'; }
 }
 
+export async function updateAdminPassword(newPassword) {
+  const { error } = await _db
+    .from('admin_settings')
+    .upsert({ id: 1, password: newPassword }, { onConflict: 'id' });
+  if (error) throw error;
+}
+
 /* ══ REALTIME CHANNEL ═════════════════════════════════════════ */
 export { _db };
